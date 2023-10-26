@@ -36,9 +36,14 @@ def play_with_file(cleaned_file, toml_file):
 
     for index, row in df.iterrows():
         desc = row["Description"]
+        found = False
         for category in cat:
             if re.match(category, desc):
                 sums[category] += row["Price"]
+                found = True
+                break
+        if not found:
+            sums[desc] = row["Price"]
     ## For tests
     print(sums)
     return sums
