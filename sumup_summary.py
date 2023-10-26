@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import calendar
 import csv
 import pandas as pd
 import toml
@@ -32,20 +33,24 @@ def play_with_file(cleaned_file, toml_file):
 
     config_file = toml.loads(open(toml_file, "r").read())
     cat = config_file["categories"]
-    sums = dict.fromkeys(cat, 0)
+    sums = dict()
 
     for index, row in df.iterrows():
         desc = row["Description"]
+        month = calendar.month_name[int(row["Date"][3:5])]
+        if month not in sums.keys():
+            sums[month] = dict.fromkeys(cat, 0)
         found = False
         for category in cat:
             if re.match(category, desc):
-                sums[category] += row["Price"]
+                sums[month][category] += row["Price"]
                 found = True
                 break
         if not found:
-            sums[desc] = row["Price"]
+            sums[month][desc] = row["Price"]
     ## For tests
     print(sums)
+
     return sums
 
 
