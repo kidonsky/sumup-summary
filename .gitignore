@@ -3,7 +3,8 @@ sumup_clean*
 sumup.sublime-workspace
 sumup.sublime-project
 sumup-env
-.~lock*
+**/*.swp
+**/.~lock*
 *.csv
-!test_files/*
+!test_files/*.csv
 custom_files

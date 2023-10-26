@@ -4,15 +4,17 @@ import argparse
 import calendar
 import csv
 import pandas as pd
+from pathlib import Path
 import toml
 import re
 import os
 import sys
 from datetime import datetime
 
-
+res_folder = "res_files"
 default_cleaned_file = (
-    "sumup_clean"
+    res_folder
+    + "/sumup_clean"
     + str(datetime.now().month)
     + "-"
     + str(datetime.now().year)
@@ -27,9 +29,9 @@ def send_to_MM(dict_to_send, server, token):
     pass
 
 
-def play_with_file(cleaned_file, toml_file):
+def extract_data_from_file(cleaned_file, toml_file):
     df = pd.read_csv(cleaned_file)
-    df.sort_values("Description").to_csv(cleaned_file)
+    df.sort_values("Description").to_csv(cleaned_file, index=False)
 
     config_file = toml.loads(open(toml_file, "r").read())
     cat = config_file["categories"]
@@ -54,7 +56,7 @@ def play_with_file(cleaned_file, toml_file):
     return sums
 
 
-def clean_file(inputfile, cleaned_file):
+def rm_csv_rows(inputfile, cleaned_file):
     with open(inputfile, newline="") as csvfile:
         read_file = csv.DictReader(csvfile)
         with open(cleaned_file, "w", newline="") as csvfile:
@@ -81,6 +83,7 @@ def clean_file(inputfile, cleaned_file):
 
 
 def main(cli_args):
+    Path("./" + res_folder).mkdir(parents=True, exist_ok=True)
     try:
         os.remove(default_cleaned_file)
     except Exception as e:
@@ -104,8 +107,8 @@ def main(cli_args):
     mmToken = args.mattermostToken
     sumupToken = args.SumupToken
 
-    clean_file(inputfile, cleaned_file)
-    resume = play_with_file(cleaned_file, toml_file)
+    rm_csv_rows(inputfile, cleaned_file)
+    resume = extract_data_from_file(cleaned_file, toml_file)
     send_to_MM(resume, mmServer, mmToken)
 
 
