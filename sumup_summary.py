@@ -22,6 +22,10 @@ default_cleaned_file = (
 )
 
 
+def send_to_MM(dict_to_send, server, token):
+    pass
+
+
 def play_with_file(cleaned_file, toml_file):
     df = pd.read_csv(cleaned_file)
     df.sort_values("Description").to_csv(cleaned_file)
@@ -37,6 +41,7 @@ def play_with_file(cleaned_file, toml_file):
                 sums[category] += row["Price"]
     ## For tests
     print(sums)
+    return sums
 
 
 def clean_file(inputfile, cleaned_file):
@@ -90,7 +95,8 @@ def main(cli_args):
     sumupToken = args.SumupToken
 
     clean_file(inputfile, cleaned_file)
-    play_with_file(cleaned_file, toml_file)
+    resume = play_with_file(cleaned_file, toml_file)
+    send_to_MM(resume, mmServer, mmToken)
 
 
 if __name__ == "__main__":
