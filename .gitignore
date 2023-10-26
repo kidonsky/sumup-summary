@@ -1,0 +1,9 @@
+__pycache__
+sumup_clean*
+sumup.sublime-workspace
+sumup.sublime-project
+sumup-env
+.~lock*
+*.csv
+!test_files/*
+custom_files

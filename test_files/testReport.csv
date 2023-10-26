@@ -1,0 +1,13 @@
+Account,Date,Time,Type,Transaction ID,Receipt Number,Payment Method,Quantity,Description,Currency,Price (Gross),Price (Net),Tax,Tax rate,Transaction refunded
+blabla @ nospam.thanks,13/07/2023,19:59,Sales,TDCZHYCF7D,S20230000484,Card,1,Adhesion ,EUR,5.00,4.17,0.83,20%,
+blabla @ nospam.thanks,28/09/2023,20:04,Sales,TC3CPLQV3M,S20230000630,Card,1,Adhesion ,EUR,15.00,12.50,2.50,20%,
+blabla @ nospam.thanks,28/09/2023,20:09,Sales,TD3DASX3PA,S20230000631,Card,1,Adhesion ,EUR,10.00,8.33,1.67,20%,
+blabla @ nospam.thanks,07/09/2023,21:00,Sales,TLRQTAVGK7,S20230000612,Card,3,Alcool ,EUR,7.50,7.50,0.00,0%,
+blabla @ nospam.thanks,07/09/2023,21:24,Sales,TE6XPVSMGX,S20230000615,Card,4,Alcool ,EUR,10.00,10.00,0.00,0%,
+blabla @ nospam.thanks,28/09/2023,22:47,Sales,TD9CT73NPA,S20230000656,Card,1,Alcool - Bière Cidre Pinte standard 1,EUR,5.00,5.00,0.00,0%,
+blabla @ nospam.thanks,28/09/2023,23:28,Sales,TDPLP3MYD9,S20230000660,Card,2,Alcool - Bière Cidre Pinte standard 1,EUR,10.00,10.00,0.00,0%,
+blabla @ nospam.thanks,13/07/2023,19:51,Sales,TQLYX6HGFQ,S20230000481,Card,1,Bière ,EUR,7.00,5.83,1.17,20%,
+blabla @ nospam.thanks,13/07/2023,19:55,Sales,TDNFVXZGNZ,S20230000482,Card,1,Bière ,EUR,7.00,5.83,1.17,20%,
+blabla @ nospam.thanks,06/07/2023,21:08,Sales,TDD7HU3ACM,S20230000463,Card,2,Bière - 25cl Prix Conseillé ,EUR,5.00,5.00,0.00,0%,
+blabla @ nospam.thanks,06/07/2023,23:34,Sales,TEPKN9SMUF,S20230000474,Card,1,Bière - 25cl Prix Conseillé ,EUR,2.50,2.50,0.00,0%,
+blabla @ nospam.thanks,06/07/2023,23:50,Sales,TER2EDATM7,S20230000475,Card,4,Bière - 25cl Prix Conseillé ,EUR,10.00,10.00,0.00,0%,
