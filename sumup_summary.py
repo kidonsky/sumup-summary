@@ -9,6 +9,7 @@ from pathlib import Path
 import toml
 import re
 import requests
+from time import sleep
 import os
 import sys
 import datetime
@@ -79,10 +80,15 @@ def get_sumup_sumary(priv_token, year, month):
             headers=header,
             params={"transaction_code": trans_id},
         )
-        detail = json.loads(details.text)
+        try:
+            detail = json.loads(details.text)
+        except Exception as e:
+            print(details)
+            raise e
 
         transactions = json.loads(res.text)
         for product in detail["products"]:
+            sleep(1)
             ## Create a new dic with Date,Time,Description,Price,Transaction ID
             tmp_dic = dict()
             hour = int(trans["timestamp"][11:13]) + 2
@@ -106,13 +112,48 @@ def get_sumup_sumary(priv_token, year, month):
                 tmp_dic["Price"] = product["total_with_vat"]
             tmp_dic["Transaction ID"] = trans_id
             clean_sumary.append(tmp_dic)
+    ## For debug ================================================
     df = pd.DataFrame(clean_sumary)
     df.sort_values("Description").to_csv("test.csv", index=False)
+    ## ==========================================================
     return clean_sumary
 
 
-def send_to_MM(dict_to_send, server, token):
-    pass
+def send_to_MM(dict_to_send, server, token, channel_to_send):
+    header = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
+    post_content = {"channel_id": channel_to_send, "message": ""}
+
+    months_fr = {
+        "January": "janvier",
+        "February": "février",
+        "March": "mars",
+        "April": "avril",
+        "May": "mai",
+        "June": "juin",
+        "July": "juillet",
+        "August": "août",
+        "September": "septembre",
+        "October": "octobre",
+        "November": "Novembre",
+        "December": "décembre",
+    }
+
+    for month_report in dict_to_send.keys():
+        message = (
+            """Bonjour bonjour !
+Voici le rapport Sumup du mois de """
+            + months_fr[month_report]
+        )
+        for cat in dict_to_send[month_report].keys():
+            message += (
+                "\n- **" + cat + "** --> " + str(dict_to_send[month_report][cat]) + "€"
+            )
+        post_content["message"] = message
+        res = requests.post(
+            server + "api/v4/posts", headers=header, data=json.dumps(post_content)
+        )
+    print(res)
+    return res
 
 
 def extract_data(data_dict, toml_file):
@@ -125,6 +166,7 @@ def extract_data(data_dict, toml_file):
         month = calendar.month_name[int(row["Date"][3:5])]
         if month not in sums.keys():
             sums[month] = dict.fromkeys(cat, 0)
+            print("reset")
         found = False
         for category in cat:
             if re.match(category, desc):
@@ -133,6 +175,7 @@ def extract_data(data_dict, toml_file):
                 break
         if not found:
             sums[month][desc] = row["Price"]
+            cat.append(desc)
     ## For tests
     print(sums)
 
@@ -189,6 +232,7 @@ def main(cli_args):
     parser.add_argument("-cf", "--configFile", default="categories.toml")
     parser.add_argument("-mm", "--mattermostServer")
     parser.add_argument("-mmT", "--mattermostToken")
+    parser.add_argument("-mmC", "--mattermostChannelID")
     parser.add_argument("-sT", "--SumupToken")
     parser.add_argument("-month", default=last_month)
     parser.add_argument("-year", default=year_last_month)
@@ -200,20 +244,21 @@ def main(cli_args):
     toml_file = args.configFile
     mmServer = args.mattermostServer
     mmToken = args.mattermostToken
+    mmChannel = args.mattermostChannelID
     sumupToken = args.SumupToken
     month = args.month
     year = args.year
 
     if sumupToken:
         data = get_sumup_sumary(sumupToken, year, month)
-        extract_data(data, toml_file)
+        resume = extract_data(data, toml_file)
     elif inputfile:
         rm_csv_rows(inputfile, cleaned_file)
         resume = extract_data_from_file(cleaned_file, toml_file)
     else:
         print("Problem with arguments")
         return 1
-    # send_to_MM(resume, mmServer, mmToken)
+    send_to_MM(resume, mmServer, mmToken, mmChannel)
 
 
 if __name__ == "__main__":

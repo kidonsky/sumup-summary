@@ -1,5 +1,6 @@
 import sumup_summary
 import filecmp
+import requests
 import os
 
 
@@ -32,3 +33,20 @@ def test_extract():
         sumup_summary.extract_data_from_file(test_extracted_file, config_file)
         == verified_data_extracted
     )
+
+
+# def test_sendMM():
+#     data_to_send = {
+#         "September": {
+#             "Alcool|Bière": 262.0,
+#             "Adh[e,é]sio": 44.0,
+#             "Jus de pomme - 25cl": 10.0,
+#             "Soft": 19.5,
+#             "Tartiflette ": 12.0,
+#         }
+#     }
+#     print(res.request.url)
+#     print(res.request.body)
+#     print(res.request.headers)
+#     print(res.text)
+#     assert res.status_code == 201
