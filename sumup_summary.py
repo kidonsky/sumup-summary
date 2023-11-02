@@ -3,41 +3,124 @@
 import argparse
 import calendar
 import csv
+import json
 import pandas as pd
 from pathlib import Path
 import toml
 import re
+import requests
 import os
 import sys
-from datetime import datetime
+import datetime
 
 res_folder = "res_files"
 default_cleaned_file = (
     res_folder
     + "/sumup_clean"
-    + str(datetime.now().month)
+    + str(datetime.datetime.now().month)
     + "-"
-    + str(datetime.now().year)
+    + str(datetime.datetime.now().year)
     + "-"
-    + str(datetime.now().hour)
-    + str(datetime.now().minute)
+    + str(datetime.datetime.now().hour)
+    + str(datetime.datetime.now().minute)
     + ".csv"
 )
+
+
+def get_sumup_sumary(priv_token, year, month):
+    ## Get history from last month
+    sumup_url = "https://api.sumup.com/v0.1/me/"
+
+    financial_request = "financials/transactions"
+    detail_request = "transactions"
+
+    month = month.zfill(2)
+    assert int(month) <= 12, "month is too high"
+    assert (
+        datetime.datetime(int(year), int(month), 1) < datetime.datetime.now()
+    ), "This month is in future."
+
+    last_day_month = str(calendar.monthrange(int(year), int(month))[1])
+
+    period = (
+        "start_date="
+        + year
+        + "-"
+        + month
+        + "-01&end_date="
+        + year
+        + "-"
+        + month
+        + "-"
+        + last_day_month
+    )
+    header = {"Authorization": "Bearer " + priv_token}
+
+    res = requests.get(sumup_url + financial_request + "?" + period, headers=header)
+
+    transactions = json.loads(res.text)
+    if not transactions:
+        print("There is no result")
+        return 1
+    assert "error_code" not in transactions[0].keys(), (
+        "There was an error in the request: "
+        + transactions[0]["error_code"]
+        + " --- "
+        + transactions[0]["message"]
+    )
+    clean_sumary = []
+
+    for trans in transactions:
+        ## We extract the transaction to get transaction details
+        trans_id = trans["transaction_code"]
+        ## We need details to get the product description
+        details = requests.get(
+            sumup_url + detail_request,
+            headers=header,
+            params={"transaction_code": trans_id},
+        )
+        detail = json.loads(details.text)
+
+        transactions = json.loads(res.text)
+        for product in detail["products"]:
+            ## Create a new dic with Date,Time,Description,Price,Transaction ID
+            tmp_dic = dict()
+            hour = int(trans["timestamp"][11:13]) + 2
+            delta_day = 0
+            if hour >= 24:
+                delta_day = 1
+                hour = hour % 24
+            tmp_dic["Date"] = (
+                datetime.datetime.strptime(trans["timestamp"][:10], "%Y-%m-%d")
+                + datetime.timedelta(days=delta_day)
+            ).strftime("%d/%m/%Y")
+
+            tmp_dic["Time"] = str(hour) + trans["timestamp"][13:16]
+            all_desc = product["name"]
+            # if "description" in product.keys():
+            #     all_desc += " " + product["description"]
+            tmp_dic["Description"] = all_desc
+            if "total_with_vat" not in product.keys():
+                tmp_dic["Price"] = product["total_price"]
+            else:
+                tmp_dic["Price"] = product["total_with_vat"]
+            tmp_dic["Transaction ID"] = trans_id
+            clean_sumary.append(tmp_dic)
+    df = pd.DataFrame(clean_sumary)
+    df.sort_values("Description").to_csv("test.csv", index=False)
+    return clean_sumary
 
 
 def send_to_MM(dict_to_send, server, token):
     pass
 
 
-def extract_data_from_file(cleaned_file, toml_file):
-    df = pd.read_csv(cleaned_file)
-    df.sort_values("Description").to_csv(cleaned_file, index=False)
-
+def extract_data(data_dict, toml_file):
     config_file = toml.loads(open(toml_file, "r").read())
     cat = config_file["categories"]
     sums = dict()
 
-    for index, row in df.iterrows():
+    for row in data_dict:
         desc = row["Description"]
         month = calendar.month_name[int(row["Date"][3:5])]
         if month not in sums.keys():
@@ -54,6 +137,12 @@ def extract_data_from_file(cleaned_file, toml_file):
     print(sums)
 
     return sums
+
+
+def extract_data_from_file(cleaned_file, toml_file):
+    df = pd.read_csv(cleaned_file)
+    df.sort_values("Description").to_csv(cleaned_file, index=False)
+    return extract_data(df.iterrows(), toml_file)
 
 
 def rm_csv_rows(inputfile, cleaned_file):
@@ -89,14 +178,20 @@ def main(cli_args):
     except Exception as e:
         pass
 
+    last_month = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
+    year_last_month = last_month.strftime("%Y")
+    last_month = last_month.strftime("%m")
+
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-i", "--inputfile", required=True)
+    parser.add_argument("-i", "--inputfile")
     parser.add_argument("-o", "--outputfile", default=default_cleaned_file)
     parser.add_argument("-cf", "--configFile", default="categories.toml")
     parser.add_argument("-mm", "--mattermostServer")
     parser.add_argument("-mmT", "--mattermostToken")
     parser.add_argument("-sT", "--SumupToken")
+    parser.add_argument("-month", default=last_month)
+    parser.add_argument("-year", default=year_last_month)
 
     args = parser.parse_args(cli_args)
 
@@ -106,10 +201,19 @@ def main(cli_args):
     mmServer = args.mattermostServer
     mmToken = args.mattermostToken
     sumupToken = args.SumupToken
+    month = args.month
+    year = args.year
 
-    rm_csv_rows(inputfile, cleaned_file)
-    resume = extract_data_from_file(cleaned_file, toml_file)
-    send_to_MM(resume, mmServer, mmToken)
+    if sumupToken:
+        data = get_sumup_sumary(sumupToken, year, month)
+        extract_data(data, toml_file)
+    elif inputfile:
+        rm_csv_rows(inputfile, cleaned_file)
+        resume = extract_data_from_file(cleaned_file, toml_file)
+    else:
+        print("Problem with arguments")
+        return 1
+    # send_to_MM(resume, mmServer, mmToken)
 
 
 if __name__ == "__main__":
